@@ -9,7 +9,7 @@ import aiofiles
 import requests
 from websockets import connect
 
-streamer = "juunnnnnnnnnnnnnas"
+streamer = ""
 chat_messages = []
 live = False
 
