@@ -230,7 +230,7 @@ def startRecordingStream(stream):
     )
 
     try:
-        print(["[VOD] ffmpeg running..."])
+        print("[VOD] ffmpeg running...")
         ffmpeg_output.run()
         globals()["live"] = False
     except ffmpeg.Error:
