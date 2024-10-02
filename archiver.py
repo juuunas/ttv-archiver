@@ -187,11 +187,11 @@ async def updateMessages():
     return None
 
 
-def upload(filename):
+async def upload(filename):
     print(f"[Uploader] Uploading file {filename} to YouTube...")
 
     try:
-        subprocess.run(
+        await subprocess.Popen(
             [
                 ".venv/bin/youtube-up",
                 "video",
@@ -205,6 +205,8 @@ def upload(filename):
         print("[Uploader] Error occoured while uploading")
 
     print(f"[Uploader] {filename} succesfully uploaded!")
+
+    return None
 
 
 def startRecordingStream(stream):
@@ -245,7 +247,7 @@ async def main():
         if isStreamerLive(streamer):
             stream = getBestStream(streamer)
             if stream:
-                print("Streamer is live! Starting recording...")
+                print("Live. Starting recording...")
                 globals()["live"] = True
                 _, _, filename = await asyncio.gather(
                     joinChat(),
@@ -258,8 +260,6 @@ async def main():
                 asyncio.create_task(upload(filename))
             else:
                 print("Twitch API shows stream is live but playlist is unavailable!")
-        else:
-            print("Streamer is not live.")
 
         await asyncio.sleep(3.5)
 
