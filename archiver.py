@@ -190,16 +190,19 @@ async def updateMessages():
 def upload(filename):
     print(f"[Uploader] Uploading file {filename} to YouTube...")
 
-    subprocess.run(
-        [
-            ".venv/bin/youtube-up",
-            "video",
-            filename,
-            f"--title={filename}",
-            "--cookies_file=cookies/cookies.txt",
-            "--privacy=PUBLIC",
-        ]
-    )
+    try:
+        subprocess.run(
+            [
+                ".venv/bin/youtube-up",
+                "video",
+                filename,
+                f"--title={filename}",
+                "--cookies_file=cookies/cookies.txt",
+                "--privacy=PUBLIC",
+            ]
+        )
+    except Exception as _:
+        print("[Uploader] Error occoured while uploading")
 
     print(f"[Uploader] {filename} succesfully uploaded!")
 
@@ -252,7 +255,7 @@ async def main():
 
                 globals()["chat_messages"] = []
 
-                upload(filename)
+                asyncio.create_task(upload(filename))
             else:
                 print("Twitch API shows stream is live but playlist is unavailable!")
         else:
