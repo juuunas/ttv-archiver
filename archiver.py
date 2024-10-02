@@ -2,6 +2,7 @@
 import asyncio
 import streamlink
 import os
+import subprocess
 from datetime import datetime
 import re
 import ffmpeg
@@ -71,34 +72,42 @@ def isStreamerLive(channel):
     )
 
 
-def parse_irc_message(message):
+def parse_irc_messages(messages):
     pattern = (
         r"^(?P<tags>@[^ ]+) (?P<prefix>:[^ ]+) (?P<command>\w+)( (?P<params>.*))?$"
     )
-    match = re.match(pattern, message)
+    message_list = messages.strip().split("\r\n")
+    parsed_messages = []
 
-    if not match:
-        print(f"Failed to parse message: {message}")
-        return None
+    for message in message_list:
+        match = re.match(pattern, message)
 
-    tags = match.group("tags")[1:].split(";") if match.group("tags") else []
-    tag_dict = {
-        key_value.split("=", 1)[0]: key_value.split("=", 1)[1] for key_value in tags
-    }
+        if not match:
+            print(f"Failed to parse message: {message}")
+            continue
 
-    prefix = match.group("prefix")[1:] if match.group("prefix") else None
-    command = match.group("command")
-    params = match.group("params").split(" ", 1) if match.group("params") else []
+        tags = match.group("tags")[1:].split(";") if match.group("tags") else []
+        tag_dict = {
+            key_value.split("=", 1)[0]: key_value.split("=", 1)[1] for key_value in tags
+        }
 
-    if len(params) > 1:
-        params[1] = params[1][1:]
+        prefix = match.group("prefix")[1:] if match.group("prefix") else None
+        command = match.group("command")
+        params = match.group("params").split(" ", 1) if match.group("params") else []
 
-    return {
-        "tags": tag_dict,
-        "prefix": prefix,
-        "command": command,
-        "params": params,
-    }
+        if len(params) > 1:
+            params[1] = params[1][1:]
+
+        parsed_messages.append(
+            {
+                "tags": tag_dict,
+                "prefix": prefix,
+                "command": command,
+                "params": params,
+            }
+        )
+
+    return parsed_messages
 
 
 async def joinChat():
@@ -119,16 +128,15 @@ async def joinChat():
                     if message.startswith("PING"):
                         await websocket.send("PONG")
 
-                    parsedMessage = parse_irc_message(message)
-                    if parsedMessage is not None:
-                        if parsedMessage["command"] == "PRIVMSG":
-                            user = parsedMessage["tags"]["display-name"]
-                            chat_message = parsedMessage["params"][1].replace("\r", "")[
-                                :75
-                            ]
-                            if len(chat_messages) + 1 > 20:
-                                chat_messages.pop(0)
-                            chat_messages.append(f"{user}: {chat_message}")
+                    parsedMessages = parse_irc_messages(message)
+                    if parsedMessages is not None:
+                        for msg in parsedMessages:
+                            if msg["command"] == "PRIVMSG":
+                                user = msg["tags"]["display-name"]
+                                chat_message = msg["params"][1].replace("\r", "")[:75]
+                                if len(chat_messages) + 1 > 20:
+                                    chat_messages.pop(0)
+                                chat_messages.append(f"{user}: {chat_message}")
 
                 except asyncio.CancelledError:
                     break
@@ -153,11 +161,9 @@ async def joinChat():
 
 
 async def updateMessages():
-    print("[msg] Updating messages with new ones from IRC")
+    print("[msg] Updating text.txt file with chat msgs from " + streamer)
     dir_name = os.path.dirname("text.txt")
     while live:
-        print("[msg] Updating messages...")
-
         async with aiofiles.tempfile.NamedTemporaryFile(
             "w", delete=False, dir=dir_name, suffix=".tmp", encoding="utf-8"
         ) as tmp_file:
@@ -174,7 +180,6 @@ async def updateMessages():
             finally:
                 if os.path.exists(temp_file_path):
                     os.remove(temp_file_path)
-        print("[msg] Updated messages")
 
         await asyncio.sleep(0.5)
 
@@ -182,20 +187,45 @@ async def updateMessages():
     return None
 
 
+def upload(filename):
+    print(f"[Uploader] Uploading file {filename} to YouTube...")
+
+    subprocess.run(
+        [
+            ".venv/bin/youtube-up",
+            "video",
+            filename,
+            f"--title={filename}",
+            "--cookies_file=cookies/cookies.txt",
+            "--privacy=PUBLIC",
+        ]
+    )
+
+    print(f"[Uploader] {filename} succesfully uploaded!")
+
+
 def startRecordingStream(stream):
     filename = (
-        f"{streamer} {getStreamerTitle(streamer)} {datetime.now().isoformat()}.mp4"
+        re.sub(
+            r"\W+",
+            " ",
+            f"{streamer} {getStreamerTitle(streamer)} {datetime.now().isoformat()}",
+        )
+        + ".mp4"
     )
+
     print("[VOD] Constructed filename: " + filename)
     input = ffmpeg.input(stream.url)
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.7:boxw=500:boxh=500:fix_bounds=true:",
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.7:boxw=500:boxh=500:fix_bounds=true:expansion=none",
         f="mp4",
+        loglevel="warning",
     )
 
     try:
+        print(["[VOD] ffmpeg running..."])
         ffmpeg_output.run()
         globals()["live"] = False
     except ffmpeg.Error:
@@ -222,8 +252,7 @@ async def main():
 
                 globals()["chat_messages"] = []
 
-                print("Uploading recording " + filename)
-                # TODO upload recorded file
+                upload(filename)
             else:
                 print("Twitch API shows stream is live but playlist is unavailable!")
         else:
