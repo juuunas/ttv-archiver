@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import asyncio
 import streamlink
-import os
 import subprocess
+import os
 from datetime import datetime
 import re
 import ffmpeg
@@ -188,35 +188,69 @@ async def updateMessages():
 
 
 async def upload(filename):
-    print(f"[Uploader] Uploading file {filename} to YouTube...")
+    print(f"[Uploader] Processing file {filename}...")
 
     try:
-        await subprocess.Popen(
-            [
-                ".venv/bin/youtube-up",
-                "video",
-                filename,
-                f"--title={filename}",
-                "--cookies_file=cookies/cookies.txt",
-                "--privacy=PUBLIC",
-            ]
-        )
-    except Exception as _:
-        print("[Uploader] Error occoured while uploading")
+        probe = ffmpeg.probe(filename)
+        duration = float(probe["format"]["duration"])
+        total_hours = duration / 3600
 
-    print(f"[Uploader] {filename} succesfully uploaded!")
+        segment_filenames = []
+
+        if total_hours > 10:
+            segment_duration = 10 * 3600
+            base_name = os.path.splitext(filename)[0]
+
+            for i in range(0, int(duration), segment_duration):
+                start_time = i
+                end_time = min(start_time + segment_duration, duration)
+
+                segment_filename = (
+                    f"{base_name}_part_{i // segment_duration + 1:03d}.mp4"
+                )
+                segment_filenames.append(segment_filename)
+
+                ffmpeg.input(
+                    filename,
+                    ss=start_time,
+                    t=end_time - start_time,
+                    loglevel="warning",
+                ).output(segment_filename, c="copy").run()
+
+        else:
+            segment_filenames = [filename]
+
+        for index, segment_filename in enumerate(segment_filenames):
+            title = (
+                f"[{index + 1}/{len(segment_filenames)}] {filename} "
+                if len(segment_filenames) > 1
+                else filename
+            )
+            print(f"[Uploader] Uploading segment {segment_filename}...")
+            subprocess.run(
+                [
+                    ".venv/bin/youtube-up",
+                    "video",
+                    segment_filename,
+                    f"--title={title}",
+                    f"--description={filename}",
+                    "--cookies_file=cookies/cookies.txt",
+                    "--privacy=PRIVATE",
+                ]
+            )  # TODO Better error handling here
+
+        print("[Uploader] All segments successfully uploaded!")
+
+    except Exception as e:
+        print(f"[Uploader] Error occurred: {e}")
 
     return None
 
 
 def startRecordingStream(stream):
     filename = (
-        re.sub(
-            r"\W+",
-            " ",
-            f"{streamer} {getStreamerTitle(streamer)} {datetime.now().isoformat()}",
-        )
-        + ".mp4"
+        f"{streamer} {datetime.today().strftime('%Y-%m-%d')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}",
+        +".mp4",
     )
 
     print("[VOD] Constructed filename: " + filename)
@@ -224,8 +258,10 @@ def startRecordingStream(stream):
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
+        vcodec="x264",  # TODO Use hevc if possible?
         vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.7:boxw=500:boxh=500:fix_bounds=true:expansion=none",
         f="mp4",
+        r=60,  # TODO Test framerate more
         loglevel="warning",
     )
 
@@ -233,8 +269,9 @@ def startRecordingStream(stream):
         print("[VOD] ffmpeg running...")
         ffmpeg_output.run()
         globals()["live"] = False
-    except ffmpeg.Error:
+    except ffmpeg.Error:  # TODO Better error handling here
         print("[VOD] Recording failed due to ffmpeg crash")
+        globals()["live"] = False
         return None
 
     print("[VOD] Saved recording to " + filename)
@@ -245,9 +282,9 @@ async def main():
     print("Archiving streams from streamer " + streamer)
     while True:
         if isStreamerLive(streamer):
-            stream = getBestStream(streamer)
+            stream = getBestStream(streamer)  # TODO Get ad-free playlist
             if stream:
-                print("Live. Starting recording...")
+                print("Live. Starting...")
                 globals()["live"] = True
                 _, _, filename = await asyncio.gather(
                     joinChat(),
