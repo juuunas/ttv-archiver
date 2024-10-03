@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import asyncio
-import streamlink
 import subprocess
 import os
 from datetime import datetime
@@ -10,7 +9,8 @@ import aiofiles
 import requests
 from websockets import connect
 
-streamer = ""
+streamer = "juunnnnnnnnnnnnnas"
+playlist_URI = f"https://lb-eu3.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26allow_audio_only%3Dtrue%26fast_bread%3Dtrue"
 chat_messages = []
 live = False
 
@@ -23,8 +23,8 @@ initCommands = [
 ]
 
 
-def getBestStream(channel):
-    return streamlink.streams("https://twitch.tv/" + channel).get("best") or None
+def isPlaylistAvailable():
+    return requests.get(playlist_URI).status_code == 200
 
 
 def getStreamerTitle(channel):
@@ -247,11 +247,11 @@ async def upload(filename):
     return None
 
 
-def startRecordingStream(stream):
+def startRecordingStream():
     filename = f"{streamer} {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}.mp4"
 
     print("[VOD] Constructed filename: " + filename)
-    input = ffmpeg.input(stream.url)
+    input = ffmpeg.input(playlist_URI)
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
@@ -279,14 +279,13 @@ async def main():
     print("Archiving streams from streamer " + streamer)
     while True:
         if isStreamerLive(streamer):
-            stream = getBestStream(streamer)  # TODO Get ad-free playlist
-            if stream:
+            if isPlaylistAvailable():
                 print("Live. Starting...")
                 globals()["live"] = True
                 _, _, filename = await asyncio.gather(
                     joinChat(),
                     updateMessages(),
-                    asyncio.to_thread(startRecordingStream, stream),
+                    asyncio.to_thread(startRecordingStream),
                 )
 
                 globals()["chat_messages"] = []
