@@ -17,7 +17,7 @@ RUN python -m venv .venv
 RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
 COPY archiver.py .
-COPY cookies/ .
+COPY cookies/ ./cookies/
 RUN touch text.txt
 
 CMD [".venv/bin/python", "archiver.py"]
