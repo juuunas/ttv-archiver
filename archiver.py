@@ -191,6 +191,7 @@ async def upload(filename):
     print(f"[Uploader] Processing file {filename}...")
 
     try:
+        base_name = os.path.splitext(filename)[0]
         probe = ffmpeg.probe(filename)
         duration = float(probe["format"]["duration"])
         total_hours = duration / 3600
@@ -199,7 +200,6 @@ async def upload(filename):
 
         if total_hours > 10:
             segment_duration = 10 * 3600
-            base_name = os.path.splitext(filename)[0]
 
             for i in range(0, int(duration), segment_duration):
                 start_time = i
@@ -222,11 +222,11 @@ async def upload(filename):
 
         for index, segment_filename in enumerate(segment_filenames):
             title = (
-                f"[{index + 1}/{len(segment_filenames)}] {filename} "
+                f"[{index + 1}/{len(segment_filenames)}] {base_name} "
                 if len(segment_filenames) > 1
-                else filename
+                else base_name
             )
-            print(f"[Uploader] Uploading segment {segment_filename}...")
+            print(f"[Uploader] Uploading segment {title}...")
             subprocess.run(
                 [
                     ".venv/bin/youtube-up",
@@ -248,18 +248,15 @@ async def upload(filename):
 
 
 def startRecordingStream(stream):
-    filename = (
-        f"{streamer} {datetime.today().strftime('%Y-%m-%d')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}",
-        +".mp4",
-    )
+    filename = f"{streamer} {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}.mp4"
 
     print("[VOD] Constructed filename: " + filename)
     input = ffmpeg.input(stream.url)
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vcodec="x264",  # TODO Use hevc if possible?
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.7:boxw=500:boxh=500:fix_bounds=true:expansion=none",
+        vcodec="libx265",  # TODO Use hevc if possible?
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=20:box=1:boxcolor=gray@0.4:boxw=700:boxh=450:fix_bounds=true:expansion=none:borderw=5",
         f="mp4",
         r=60,  # TODO Test framerate more
         loglevel="warning",
