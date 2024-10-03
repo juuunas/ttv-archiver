@@ -1,0 +1,6 @@
+services:
+  ttv-archiver:
+    build: .
+    container_name: ttv-archiver
+    environment:
+      streamer: tenzinniznet
