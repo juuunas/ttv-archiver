@@ -190,13 +190,12 @@ async def updateMessages():
 async def upload(filename):
     print(f"[Uploader] Processing file {filename}...")
 
+    segment_filenames = []
     try:
         base_name = os.path.splitext(filename)[0]
         probe = ffmpeg.probe(filename)
         duration = float(probe["format"]["duration"])
         total_hours = duration / 3600
-
-        segment_filenames = []
 
         if total_hours > 10:
             segment_duration = 10 * 3600
@@ -237,13 +236,20 @@ async def upload(filename):
                     "--cookies_file=cookies/cookies.txt",
                     "--privacy=PRIVATE",
                 ]
-            )  # TODO Better error handling here
-
-        print("[Uploader] All segments successfully uploaded!")
-
-    except Exception as e:
+            )
+    except Exception as e:  # TODO Return so that the segments don't get deleted, maybe notify with a telegram notification?
         print(f"[Uploader] Error occurred: {e}")
+        return None
 
+    try:
+        if len(segment_filenames) > 1:
+            for name in segment_filename:
+                os.remove(name)
+        os.remove(filename)
+    except Exception as e:
+        print(f"[Uploader] Error while cleaning up: {e}")
+
+    print("[Uploader] All segments successfully uploaded and cleaned up!")
     return None
 
 
