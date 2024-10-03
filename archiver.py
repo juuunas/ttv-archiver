@@ -10,7 +10,7 @@ import requests
 from websockets import connect
 
 streamer = os.environ.get("streamer", "forsen")
-playlist_URI = f"https://lb-eu3.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26allow_audio_only%3Dtrue%26fast_bread%3Dtrue"
+playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26allow_audio_only%3Dtrue%26fast_bread%3Dtrue"
 chat_messages = []
 live = False
 
