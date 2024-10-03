@@ -3,4 +3,5 @@ services:
     build: .
     container_name: ttv-archiver
     environment:
+      PYTHONUNBUFFERED: 1
       streamer: tenzinniznet
