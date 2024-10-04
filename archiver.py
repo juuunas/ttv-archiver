@@ -84,7 +84,7 @@ def parse_irc_messages(messages):
         match = re.match(pattern, message)
 
         if not match:
-            print(f"Failed to parse message: {message}")
+            print(f"[IRC] Failed to parse message: {message}")
             continue
 
         tags = match.group("tags")[1:].split(";") if match.group("tags") else []
