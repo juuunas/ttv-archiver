@@ -2,6 +2,7 @@ services:
   ttv-archiver:
     build: .
     container_name: ttv-archiver
+    restart: unless-stopped
     environment:
       PYTHONUNBUFFERED: 1
       streamer: tenzinniznet
