@@ -6,11 +6,12 @@ from datetime import datetime
 import re
 import ffmpeg
 import aiofiles
+import m3u8
 import requests
 from websockets import connect
 
-streamer = os.environ.get("streamer", "forsen")
-playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26allow_audio_only%3Dtrue%26fast_bread%3Dtrue"
+streamer = os.environ.get("streamer", "erobb221")
+playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26fast_bread%3Dtrue"
 chat_messages = []
 live = False
 
@@ -23,8 +24,8 @@ initCommands = [
 ]
 
 
-def isPlaylistAvailable():
-    return requests.get(playlist_URI).status_code == 200
+def getPlaylists():
+    return requests.get(playlist_URI)
 
 
 def getStreamerTitle(channel):
@@ -253,18 +254,37 @@ async def upload(filename):
     return None
 
 
-def startRecordingStream():
+def startRecordingStream(playlists):
     filename = f"{streamer} {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}.mp4"
 
     print("[VOD] Constructed filename: " + filename)
-    input = ffmpeg.input(playlist_URI)
+
+    print("[VOD] Getting best stream")
+    splaylist = None
+    for playlist in m3u8.loads(playlists).playlists:
+        resolution = playlist.stream_info.resolution
+        if (
+            resolution[0] <= 1280
+            and resolution[1] <= 720
+            and playlist.stream_info.frame_rate <= 30
+        ):
+            if not splaylist or (
+                splaylist and splaylist.stream_info.resolution[0] < resolution[0]
+            ):
+                splaylist = playlist
+
+    print(
+        f"[VOD] Got best stream with resolution {splaylist.stream_info.resolution[0]}x{splaylist.stream_info.resolution[1]}"
+    )
+
+    input = ffmpeg.input(splaylist.uri)
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vcodec="libx265",  # TODO Use hevc if possible?
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white:fontsize=20:box=1:boxcolor=gray@0.4:boxw=700:boxh=450:fix_bounds=true:expansion=none:borderw=5",
+        vcodec="libx264",
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.7:fontsize=12:boxw=500:boxh=320:font=Inter:fontfile=Inter.ttf:fix_bounds=true:expansion=none:borderw=1:bordercolor=black@0.7",
         f="mp4",
-        r=60,  # TODO Test framerate more
+        r=30,
         loglevel="warning",
     )
 
@@ -285,13 +305,14 @@ async def main():
     print("Archiving streams from streamer " + streamer)
     while True:
         if isStreamerLive(streamer):
-            if isPlaylistAvailable():
+            playlists = getPlaylists()
+            if playlists.status_code == 200:
                 print("Live. Starting...")
                 globals()["live"] = True
                 _, _, filename = await asyncio.gather(
                     joinChat(),
                     updateMessages(),
-                    asyncio.to_thread(startRecordingStream),
+                    asyncio.to_thread(startRecordingStream, playlists.text),
                 )
 
                 globals()["chat_messages"] = []

@@ -22,6 +22,7 @@ itsdangerous==2.2.0
 Jinja2==3.1.4
 kaitaistruct==0.10
 ldap3==2.9.1
+m3u8==6.0.0
 MarkupSafe==2.1.5
 marshmallow==3.22.0
 mitmproxy==11.0.0
