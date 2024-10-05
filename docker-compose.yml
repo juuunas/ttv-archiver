@@ -6,3 +6,4 @@ services:
     environment:
       PYTHONUNBUFFERED: 1
       streamer: tenzinniznet
+      yt_privacy: PUBLIC

@@ -235,7 +235,7 @@ async def upload(filename):
                     f"--title={title}",
                     f"--description={filename}",
                     "--cookies_file=cookies/cookies.txt",
-                    "--privacy=PRIVATE",
+                    f"--privacy={os.environ.get("yt_privacy", "PRIVATE")}",
                 ]
             )
     except Exception as e:  # TODO Return so that the segments don't get deleted, maybe notify with a telegram notification?
