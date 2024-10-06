@@ -282,7 +282,7 @@ def startRecordingStream(playlists):
         if (
             resolution[0] <= 1280
             and resolution[1] <= 720
-            and playlist.stream_info.frame_rate <= 60
+            and playlist.stream_info.frame_rate <= 30
         ):
             if not splaylist or (
                 splaylist and splaylist.stream_info.resolution[0] < resolution[0]
