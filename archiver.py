@@ -135,9 +135,25 @@ async def joinChat():
                             if msg["command"] == "PRIVMSG":
                                 user = msg["tags"]["display-name"]
                                 chat_message = msg["params"][1].replace("\r", "")[:75]
-                                if len(chat_messages) + 1 > 20:
+                                if len(chat_messages) + 1 > 15:
                                     chat_messages.pop(0)
-                                chat_messages.append(f"{user}: {chat_message}")
+
+                                truncated_message = f"{user}: {chat_message}"[:225]
+                                formatted_message = ""
+                                while len(truncated_message) > 50:
+                                    split_index = truncated_message[:50].rfind(" ")
+                                    if split_index == -1:
+                                        split_index = 50
+                                    formatted_message += (
+                                        truncated_message[: split_index + 1] + "\n"
+                                    )
+                                    truncated_message = truncated_message[
+                                        split_index + 1 :
+                                    ]
+
+                                formatted_message += truncated_message
+
+                                chat_messages.append(formatted_message)
 
                 except asyncio.CancelledError:
                     break
@@ -266,7 +282,7 @@ def startRecordingStream(playlists):
         if (
             resolution[0] <= 1280
             and resolution[1] <= 720
-            and playlist.stream_info.frame_rate <= 30
+            and playlist.stream_info.frame_rate <= 60
         ):
             if not splaylist or (
                 splaylist and splaylist.stream_info.resolution[0] < resolution[0]
@@ -281,7 +297,7 @@ def startRecordingStream(playlists):
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.7:fontsize=12:boxw=500:boxh=320:font=Inter:fontfile=Inter.ttf:fix_bounds=true:expansion=none:borderw=1:bordercolor=black@0.7",
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=400:line_spacing=4",
         f="mp4",
         loglevel="warning",
     )
