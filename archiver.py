@@ -10,7 +10,7 @@ import m3u8
 import requests
 from websockets import connect
 
-streamer = os.environ.get("streamer", "erobb221")
+streamer = os.environ.get("streamer", "juunnnnnnnnnnnnnas")
 playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26fast_bread%3Dtrue"
 chat_messages = []
 live = False
@@ -198,7 +198,7 @@ async def updateMessages():
                 if os.path.exists(temp_file_path):
                     os.remove(temp_file_path)
 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.2)
 
     print("[msg] Stopped")
     return None
@@ -297,7 +297,7 @@ def startRecordingStream(playlists):
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=400:line_spacing=4:expansion=none",
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=10:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=250:line_spacing=4:expansion=none",
         f="mp4",
         loglevel="warning",
     )
