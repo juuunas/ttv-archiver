@@ -14,6 +14,7 @@ streamer = os.environ.get("streamer", "juunnnnnnnnnnnnnas")
 playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26fast_bread%3Dtrue"
 chat_messages = []
 live = False
+messagesOnScreen = 7
 
 initCommands = [
     "CAP REQ :twitch.tv/tags twitch.tv/commands",
@@ -135,7 +136,7 @@ async def joinChat():
                             if msg["command"] == "PRIVMSG":
                                 user = msg["tags"]["display-name"]
                                 chat_message = msg["params"][1].replace("\r", "")[:75]
-                                if len(chat_messages) + 1 > 15:
+                                if len(chat_messages) + 1 > messagesOnScreen:
                                     chat_messages.pop(0)
 
                                 truncated_message = f"{user}: {chat_message}"[:225]
@@ -297,7 +298,7 @@ def startRecordingStream(playlists):
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=400:line_spacing=4:expansion=none",
+        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=350:line_spacing=4:expansion=none",
         f="mp4",
         loglevel="warning",
     )
