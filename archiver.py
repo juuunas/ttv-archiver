@@ -30,48 +30,56 @@ def getPlaylists():
 
 
 def getStreamerTitle(channel):
-    return requests.post(
-        "https://gql.twitch.tv/gql#origin=twilight",
-        headers={
-            "Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko",
-        },
-        json=[
-            {
-                "operationName": "UseLiveBroadcast",
-                "variables": {"channelLogin": channel},
-                "extensions": {
-                    "persistedQuery": {
-                        "version": 1,
-                        "sha256Hash": "0b47cc6d8c182acd2e78b81c8ba5414a5a38057f2089b1bbcfa6046aae248bd2",
-                    }
-                },
-            }
-        ],
-    ).json()[0]["data"]["user"]["lastBroadcast"]["title"]
-
-
-def isStreamerLive(channel):
-    return (
-        requests.post(
+    try:
+        return requests.post(
             "https://gql.twitch.tv/gql#origin=twilight",
             headers={
                 "Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko",
             },
             json=[
                 {
-                    "operationName": "UseLive",
+                    "operationName": "UseLiveBroadcast",
                     "variables": {"channelLogin": channel},
                     "extensions": {
                         "persistedQuery": {
                             "version": 1,
-                            "sha256Hash": "639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9",
+                            "sha256Hash": "0b47cc6d8c182acd2e78b81c8ba5414a5a38057f2089b1bbcfa6046aae248bd2",
                         }
                     },
-                },
+                }
             ],
-        ).json()[0]["data"]["user"]["stream"]
-        is not None
-    )
+        ).json()[0]["data"]["user"]["lastBroadcast"]["title"]
+    except Exception as e:
+        print("Failed to get title: " + repr(e))
+        return None
+
+
+def isStreamerLive(channel):
+    try:
+        return (
+            requests.post(
+                "https://gql.twitch.tv/gql#origin=twilight",
+                headers={
+                    "Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko",
+                },
+                json=[
+                    {
+                        "operationName": "UseLive",
+                        "variables": {"channelLogin": channel},
+                        "extensions": {
+                            "persistedQuery": {
+                                "version": 1,
+                                "sha256Hash": "639d5f11bfb8bf3053b424d9ef650d04c4ebb7d94711d644afb08fe9a0fad5d9",
+                            }
+                        },
+                    },
+                ],
+            ).json()[0]["data"]["user"]["stream"]
+            is not None
+        )
+    except Exception as e:
+        print("Failed to call UseLive: " + repr(e))
+        return False
 
 
 def parse_irc_messages(messages):
@@ -256,7 +264,7 @@ async def upload(filename):
                 ]
             )
     except Exception as e:  # TODO Return so that the segments don't get deleted, maybe notify with a telegram notification?
-        print(f"[Uploader] Error occurred: {e}")
+        print(f"[Uploader] Error occurred while segmenting and uploading: {e}")
         return None
 
     try:
@@ -266,6 +274,7 @@ async def upload(filename):
         os.remove(filename)
     except Exception as e:
         print(f"[Uploader] Error while cleaning up: {e}")
+        return None
 
     print("[Uploader] All segments successfully uploaded and cleaned up!")
     return None
