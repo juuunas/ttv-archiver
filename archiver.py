@@ -15,6 +15,7 @@ playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallo
 chat_messages = []
 live = False
 messagesOnScreen = 7
+FAILED_UPLOADS_FILE = "failed_uploads.txt"
 
 initCommands = [
     "CAP REQ :twitch.tv/tags twitch.tv/commands",
@@ -213,9 +214,50 @@ async def updateMessages():
     return None
 
 
+def save_failed_upload(filename):
+    if not os.path.exists(FAILED_UPLOADS_FILE):
+        with open(FAILED_UPLOADS_FILE, "w") as f:
+            f.write("")
+
+    with open(FAILED_UPLOADS_FILE, "r") as f:
+        failed_files = {line.strip() for line in f.readlines()}
+
+    if filename not in failed_files:
+        with open(FAILED_UPLOADS_FILE, "a") as f:
+            f.write(filename + "\n")
+
+
+def remove_successful_upload(filename):
+    if not os.path.exists(FAILED_UPLOADS_FILE):
+        return
+
+    with open(FAILED_UPLOADS_FILE, "r") as f:
+        lines = f.readlines()
+    with open(FAILED_UPLOADS_FILE, "w") as f:
+        for line in lines:
+            if line.strip() != filename:
+                f.write(line)
+
+
+async def retry_failed_uploads():
+    while True:
+        if os.path.exists(FAILED_UPLOADS_FILE):
+            with open(FAILED_UPLOADS_FILE, "r") as f:
+                filenames = [line.strip() for line in f.readlines() if line.strip()]
+
+            for filename in filenames:
+                if await upload(filename):
+                    remove_successful_upload(filename)
+                else:
+                    print(f"[UPLOAD] Failed to upload {filename}. Will retry...")
+
+        await asyncio.sleep(60)
+
+
 async def upload(filename):
     print(f"[Uploader] Processing file {filename}...")
 
+    clean_base_file = True
     segment_filenames = []
     try:
         base_name = os.path.splitext(filename)[0]
@@ -252,7 +294,7 @@ async def upload(filename):
                 else base_name
             )
             print(f"[Uploader] Uploading segment {title}...")
-            subprocess.run(
+            result = subprocess.run(
                 [
                     ".venv/bin/youtube-up",
                     "video",
@@ -261,23 +303,32 @@ async def upload(filename):
                     f"--description={filename}",
                     "--cookies_file=cookies/cookies.txt",
                     f"--privacy={os.environ.get("yt_privacy", "PRIVATE")}",
-                ]
+                ],
             )
+            if result.returncode != 0:
+                print(f"[Uploader] Upload failed for segment {segment_filename}")
+                save_failed_upload(segment_filename)
+                clean_base_file = False
     except Exception as e:  # TODO Return so that the segments don't get deleted, maybe notify with a telegram notification?
         print(f"[Uploader] Error occurred while segmenting and uploading: {e}")
+        clean_base_file = False
         return None
 
     try:
         if len(segment_filenames) > 1:
             for name in segment_filename:
                 os.remove(name)
-        os.remove(filename)
+        if clean_base_file:
+            os.remove(filename)
     except Exception as e:
         print(f"[Uploader] Error while cleaning up: {e}")
         return None
 
+    if not clean_base_file:
+        return False
+
     print("[Uploader] All segments successfully uploaded and cleaned up!")
-    return None
+    return True
 
 
 def startRecordingStream(playlists):
@@ -327,6 +378,9 @@ def startRecordingStream(playlists):
 
 async def main():
     print("Archiving streams from streamer " + streamer)
+
+    asyncio.create_task(retry_failed_uploads())
+
     while True:
         if isStreamerLive(streamer):
             playlists = getPlaylists()

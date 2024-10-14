@@ -3,7 +3,9 @@ services:
     build: .
     container_name: ttv-archiver
     restart: unless-stopped
+    volumes:
+      ./cookies:/app/cookies
     environment:
       PYTHONUNBUFFERED: 1
-      streamer: tenzinniznet
+      streamer: juunnnnnnnnnnnnnas
       yt_privacy: PUBLIC
