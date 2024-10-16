@@ -4,7 +4,7 @@ services:
     container_name: ttv-archiver
     restart: unless-stopped
     volumes:
-      ./cookies:/app/cookies
+      - ./cookies:/app/cookies
     environment:
       PYTHONUNBUFFERED: 1
       streamer: juunnnnnnnnnnnnnas
