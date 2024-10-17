@@ -216,7 +216,7 @@ async def updateMessages():
     return None
 
 
-def save_failed_upload(filename):
+def save_failed_upload(segment_filename, segment_index, total_segments):
     if not os.path.exists(FAILED_UPLOADS_FILE):
         with open(FAILED_UPLOADS_FILE, "w") as f:
             f.write("")
@@ -224,9 +224,10 @@ def save_failed_upload(filename):
     with open(FAILED_UPLOADS_FILE, "r") as f:
         failed_files = {line.strip() for line in f.readlines()}
 
-    if filename not in failed_files:
+    entry = f"{segment_filename},{segment_index},{total_segments}"
+    if entry not in failed_files:
         with open(FAILED_UPLOADS_FILE, "a") as f:
-            f.write(filename + "\n")
+            f.write(entry + "\n")
 
 
 def remove_successful_upload(filename):
@@ -245,13 +246,43 @@ async def retry_failed_uploads():
     while True:
         if os.path.exists(FAILED_UPLOADS_FILE):
             with open(FAILED_UPLOADS_FILE, "r") as f:
-                filenames = [line.strip() for line in f.readlines() if line.strip()]
+                failed_entries = [
+                    line.strip() for line in f.readlines() if line.strip()
+                ]
 
-            for filename in filenames:
-                if await upload(filename):
-                    remove_successful_upload(filename)
-                else:
-                    print(f"[UPLOAD] Failed to upload {filename}. Will retry...")
+            for entry in failed_entries:
+                try:
+                    segment_filename, segment_index, total_segments = entry.split(",")
+                    segment_index = int(segment_index)
+                    total_segments = int(total_segments)
+
+                    title = (
+                        f"[{segment_index}/{total_segments}] {os.path.splitext(segment_filename)[0]}"
+                        if total_segments > 1
+                        else os.path.splitext(segment_filename)[0]
+                    )
+
+                    print(f"[Uploader] Retrying upload for {title}...")
+                    result = subprocess.run(
+                        [
+                            ".venv/bin/youtube-up",
+                            "video",
+                            segment_filename,
+                            f"--title={title}",
+                            f"--description={segment_filename}",
+                            "--cookies_file=cookies/cookies.txt",
+                            f"--privacy={os.environ.get('yt_privacy', 'PRIVATE')}",
+                        ],
+                    )
+                    if result.returncode == 0:
+                        print(f"[Uploader] Successfully uploaded {segment_filename}")
+                        remove_successful_upload(entry)
+                    else:
+                        print(
+                            f"[Uploader] Failed to upload {segment_filename}. Retrying later..."
+                        )
+                except Exception as e:
+                    print(f"[Uploader] Error while retrying upload for {entry}: {e}")
 
         await asyncio.sleep(60)
 
@@ -309,9 +340,9 @@ async def upload(filename):
             )
             if result.returncode != 0:
                 print(f"[Uploader] Upload failed for segment {segment_filename}")
-                save_failed_upload(segment_filename)
+                save_failed_upload(segment_filename, index + 1, len(segment_filenames))
                 clean_base_file = False
-    except Exception as e:  # TODO Return so that the segments don't get deleted, maybe notify with a telegram notification?
+    except Exception as e:
         print(f"[Uploader] Error occurred while segmenting and uploading: {e}")
         clean_base_file = False
         return None
