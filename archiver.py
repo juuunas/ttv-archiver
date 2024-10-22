@@ -277,7 +277,7 @@ async def retry_failed_uploads():
                     if result.returncode == 0:
                         print(f"[Uploader] Successfully uploaded {segment_filename}")
                         try:
-                            os.remove(entry)
+                            os.remove(segment_filename)
                             remove_successful_upload(entry)
                         except Exception as e:
                             print(f"[Uploader] Error while cleaning up: {e}")
