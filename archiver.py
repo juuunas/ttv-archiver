@@ -396,7 +396,7 @@ def startRecordingStream(playlists):
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
-        vf="drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=350:line_spacing=4:expansion=none",
+        vf="scale=1280:720,drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=350:line_spacing=4:expansion=none",
         f="mp4",
         loglevel="warning",
     )
