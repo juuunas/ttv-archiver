@@ -392,7 +392,7 @@ def startRecordingStream(playlists):
         f"[VOD] Got best stream with resolution {splaylist.stream_info.resolution[0]}x{splaylist.stream_info.resolution[1]}"
     )
 
-    input = ffmpeg.input(splaylist.uri)
+    input = ffmpeg.input(splaylist.uri, http_proxy="http://localhost:8080")
     ffmpeg_output = ffmpeg.output(
         input,
         filename,
