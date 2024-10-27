@@ -168,7 +168,7 @@ async def joinChat():
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
-                    print("[IRC] Unknown error on WebSocket: " + e)
+                    print("[IRC] Unknown error on WebSocket")
 
         task = asyncio.create_task(listen())
         try:
