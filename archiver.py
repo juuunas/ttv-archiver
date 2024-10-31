@@ -433,7 +433,7 @@ async def main():
 
                 globals()["chat_messages"] = []
 
-                asyncio.create_task(upload(filename))
+                asyncio.to_thread(upload(filename))
             else:
                 print("Twitch API shows stream is live but playlist is unavailable!")
 
