@@ -11,7 +11,7 @@ import requests
 from websockets import connect
 
 streamer = os.environ.get("streamer", "juunnnnnnnnnnnnnas")
-playlist_URI = f"https://lb-eu5.cdn-perfprod.com/playlist/{streamer}.m3u8%3Fallow_source%3Dtrue%26fast_bread%3Dtrue"
+playlist_URI = f"https://luminous.alienpls.org/live/{streamer}?platform=web&allow_source=true&allow_audio_only=true"
 chat_messages = []
 live = False
 messagesOnScreen = 7
