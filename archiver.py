@@ -11,7 +11,9 @@ import requests
 from websockets import connect
 
 streamer = os.environ.get("streamer", "juunnnnnnnnnnnnnas")
-playlist_URI = f"https://luminous.alienpls.org/live/{streamer}?platform=web&allow_source=true"
+playlist_URI = (
+    f"https://luminous.alienpls.org/live/{streamer}?platform=web&allow_source=true"
+)
 chat_messages = []
 live = False
 messagesOnScreen = 7
@@ -292,7 +294,7 @@ async def retry_failed_uploads():
         await asyncio.sleep(60)
 
 
-async def upload(filename):
+def upload(filename):
     print(f"[Uploader] Processing file {filename}...")
 
     clean_base_file = True
@@ -433,7 +435,7 @@ async def main():
 
                 globals()["chat_messages"] = []
 
-                asyncio.to_thread(upload(filename))
+                asyncio.create_task(asyncio.to_thread(upload, filename))
             else:
                 print("Twitch API shows stream is live but playlist is unavailable!")
 
