@@ -418,7 +418,7 @@ def startRecordingStream(playlists):
 async def main():
     print("Archiving streams from streamer " + streamer)
 
-    asyncio.create_task(retry_failed_uploads())
+    asyncio.create_task(asyncio.to_thread(retry_failed_uploads))
 
     while True:
         if isStreamerLive(streamer):
