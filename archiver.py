@@ -243,7 +243,7 @@ def remove_successful_upload(filename):
                 f.write(line)
 
 
-async def retry_failed_uploads():
+def retry_failed_uploads():
     while True:
         if os.path.exists(FAILED_UPLOADS_FILE):
             with open(FAILED_UPLOADS_FILE, "r") as f:
