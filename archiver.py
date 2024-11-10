@@ -12,7 +12,7 @@ from websockets import connect
 
 streamer = os.environ.get("streamer", "juunnnnnnnnnnnnnas")
 playlist_URI = (
-    f"https://luminous.alienpls.org/live/{streamer}?platform=web&allow_source=true"
+    f"https://luminous.nasanoa.org/live/{streamer}?platform=web&allow_source=true"
 )
 chat_messages = []
 live = False
@@ -312,7 +312,7 @@ def upload(filename):
                 end_time = min(start_time + segment_duration, duration)
 
                 segment_filename = (
-                    f"{base_name}_part_{i // segment_duration + 1:03d}.mp4"
+                    f"{base_name}_part_{i // segment_duration + 1:03d}.mkv"
                 )
                 segment_filenames.append(segment_filename)
 
@@ -371,7 +371,7 @@ def upload(filename):
 
 
 def startRecordingStream(playlists):
-    filename = f"{streamer} {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}.mp4"
+    filename = f"{streamer} {datetime.today().strftime('%Y-%m-%d %H:%M:%S')} {re.sub(r"\W+", " ", getStreamerTitle(streamer))[:60]}.mkv"
 
     print("[VOD] Constructed filename: " + filename)
 
@@ -398,7 +398,7 @@ def startRecordingStream(playlists):
         input,
         filename,
         vf="scale=1280:720,drawtext=textfile=text.txt:reload=1:fontcolor=white@0.9:fontsize=14:box=1:boxcolor=black@0.4:boxborderw=6:fontfile=Inter.ttf:fix_bounds=true:borderw=1:bordercolor=black@0.4:x=20:y=main_h-text_h-40:boxw=350:line_spacing=4:expansion=none",
-        f="mp4",
+        f="matroska",
         loglevel="warning",
     )
 
