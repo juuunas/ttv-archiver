@@ -407,9 +407,9 @@ def startRecordingStream(playlists):
         ffmpeg_output.run()
         globals()["live"] = False
     except ffmpeg.Error:  # TODO Better error handling here
-        print("[VOD] Recording failed due to ffmpeg crash")
+        print("[VOD] ffmpeg crashed, proceeding anyways")
         globals()["live"] = False
-        return None
+        return filename
 
     print("[VOD] Saved recording to " + filename)
     return filename
