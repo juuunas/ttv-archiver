@@ -290,7 +290,7 @@ def retry_failed_uploads():
                 except Exception as e:
                     print(f"[Uploader] Error while retrying upload for {entry}: {e}")
 
-        await asyncio.sleep(60)
+        time.sleep(60)
 
 
 def upload(filename):
