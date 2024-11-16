@@ -315,7 +315,7 @@ def upload(filename):
         duration = float(probe["format"]["duration"])
         total_hours = duration / 3600
 
-        if total_hours > 10:
+        if total_hours > 5:
             segment_duration = 10 * 3600
 
             for i in range(0, int(duration), segment_duration):
