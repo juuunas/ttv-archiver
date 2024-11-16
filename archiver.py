@@ -126,66 +126,76 @@ def parse_irc_messages(messages):
 async def joinChat():
     print("[IRC] Joining channel " + streamer)
 
-    websocket = await connect("ws://irc-ws.chat.twitch.tv")
-    try:
-        for command in initCommands:
-            await websocket.send(command)
-
-        print("[IRC] Started parsing messages")
-
-        async def listen():
-            while True:
-                try:
-                    message = await websocket.recv()
-
-                    if message.startswith("PING"):
-                        await websocket.send("PONG")
-
-                    parsedMessages = parse_irc_messages(message)
-                    if parsedMessages is not None:
-                        for msg in parsedMessages:
-                            if msg["command"] == "PRIVMSG":
-                                user = msg["tags"]["display-name"]
-                                chat_message = msg["params"][1].replace("\r", "")[:75]
-                                if len(chat_messages) + 1 > messagesOnScreen:
-                                    chat_messages.pop(0)
-
-                                truncated_message = f"{user}: {chat_message}"[:225]
-                                formatted_message = ""
-                                while len(truncated_message) > 50:
-                                    split_index = truncated_message[:50].rfind(" ")
-                                    if split_index == -1:
-                                        split_index = 50
-                                    formatted_message += (
-                                        truncated_message[: split_index + 1] + "\n"
-                                    )
-                                    truncated_message = truncated_message[
-                                        split_index + 1 :
-                                    ]
-
-                                formatted_message += truncated_message
-
-                                chat_messages.append(formatted_message)
-
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    print("[IRC] Unknown error on WebSocket")
-
-        task = asyncio.create_task(listen())
+    while True:
         try:
-            while live:
-                await asyncio.sleep(1)
-        finally:
-            task.cancel()
+            websocket = await connect("ws://irc-ws.chat.twitch.tv")
             try:
-                await task
-            except asyncio.CancelledError:
-                pass
+                for command in initCommands:
+                    await websocket.send(command)
 
-    finally:
-        if websocket.open:
-            await websocket.close()
+                print("[IRC] Started parsing messages")
+
+                async def listen():
+                    while True:
+                        try:
+                            message = await websocket.recv()
+
+                            if message.startswith("PING"):
+                                await websocket.send("PONG")
+
+                            parsedMessages = parse_irc_messages(message)
+                            if parsedMessages is not None:
+                                for msg in parsedMessages:
+                                    if msg["command"] == "PRIVMSG":
+                                        user = msg["tags"]["display-name"]
+                                        chat_message = msg["params"][1].replace("\r", "")[:75]
+                                        if len(chat_messages) + 1 > messagesOnScreen:
+                                            chat_messages.pop(0)
+
+                                        truncated_message = f"{user}: {chat_message}"[:225]
+                                        formatted_message = ""
+                                        while len(truncated_message) > 50:
+                                            split_index = truncated_message[:50].rfind(" ")
+                                            if split_index == -1:
+                                                split_index = 50
+                                            formatted_message += (
+                                                truncated_message[: split_index + 1] + "\n"
+                                            )
+                                            truncated_message = truncated_message[
+                                                split_index + 1 :
+                                            ]
+
+                                        formatted_message += truncated_message
+
+                                        chat_messages.append(formatted_message)
+
+                        except asyncio.CancelledError:
+                            break
+                        except Exception as e:
+                            print("[IRC] Unknown error on WebSocket")
+                            raise e
+
+                task = asyncio.create_task(listen())
+                try:
+                    while live:
+                        await asyncio.sleep(1)
+                finally:
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+
+            finally:
+                if websocket.open:
+                    await websocket.close()
+
+        except Exception as e:
+            print(f"[IRC] Error occurred: {e}. Reconnecting in 5 seconds...")
+            await asyncio.sleep(5)
+        else:
+            print("[IRC] Disconnected cleanly. Exiting retry loop.")
+            break
 
     print("[IRC] Offline")
     return None
