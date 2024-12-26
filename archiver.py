@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+# if you were going to read this code, don't
+# it was like my first time ever making a program without a framework, let alone in python which I've never even used
+# overusage of chatgpt, error handling, async operations, structure, everything here is just wrong
+# I will rewrite it soon, so that it will be better than ever, but for now this file is just pure filth, it works though 
+
 import asyncio
 import time
 import subprocess
